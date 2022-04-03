@@ -54,6 +54,14 @@ def unarch(file):
             new_file.write(fcontents)                         # write the extracted file contents
             new_file.close()
 
+            """
+            alternatively, you can just open the file 
+            with 'w' and instead decode fcontents first.
+
+            new_file = open(fname.decode(), 'w')
+            new_file.write(fcontents.decode())
+            """
+
         arch_file.close()                                     # done with the archived file
             
     except FileNotFoundError:

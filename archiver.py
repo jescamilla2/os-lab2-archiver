@@ -34,6 +34,31 @@ def arch(files, output_file):
 
     arch_file.close()
 
+def unarch(file):
+
+    try:
+        arch_file = open(file, 'rb')                          # 'rb' = 'read binary'
+        data = arch_file.read()
+
+        while len(data) > 0:                                  # continue through entire file
+
+            fname_len = int.from_bytes(data[:4], 'big')       # len of filename
+            fname = data[4:4+fname_len]                       # actual name of file (in bytes)
+            data = data[4+fname_len:]                         # remove fname_len and fname
+
+            fcontents_len = int.from_bytes(data[:4], 'big')   # len of fcontents
+            fcontents = data[4:4+fcontents_len]               # actual file contents (in bytes)
+            data = data[4+fcontents_len:]                     # remove fcontents_len and fcontents
+
+            new_file = open(fname.decode(), 'wb')             # create new file
+            new_file.write(fcontents)                         # write the extracted file contents
+            new_file.close()
+
+        arch_file.close()                                     # done with the archived file
+            
+    except FileNotFoundError:
+        os.write(1, f'{file}: File not found. Exiting...'.encode())
+        
     
 if sys.argv[1] == '-help':
     print('To archive: arch <file1> [file2] <output_file>.arch')
@@ -48,6 +73,8 @@ elif sys.argv[1] == 'arch':
 
 elif sys.argv[1] == 'unarch':
     print('extracting files...')
+    file = sys.argv[-1]
+    unarch(file)
     print('files have been extracted')
 
 else:

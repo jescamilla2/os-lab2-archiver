@@ -1,47 +1,80 @@
 #! user/bin/env python3
 import os, sys
 
-"""
+'''
+mtob = 'message to bytes'
+Takes a string and creates a byte array with
+the general structure:<str len (8 bytes)> <actual string>
+byte_array[0:8] = str len in bytes
+byte_array[8:] = str
+returns a byte-array with the encoded message
+'''
+def mtob(message, size):
+    data = bytearray()
+    data += bytearray(size.to_bytes(8, 'big'))
+    data += bytearray(message.encode())
+    
+    return data
+
+'''
+btom = 'bytes to message'
+Takes an array and extracts data where the
+general structure is:<str len (8 bytes)> <actual string>
+metadata:
+     (0) message
+     (1) <metadata> + message
+     (2) <metadata> + <metadata> + message
+Essentially, metadata tells you how many 'pieces' of
+the string there are. A filename (for instance) would
+consist of: filename + contents
+returns an array: [metadata, metadata, ... , message]
+'''
+def btom(data, metadata=0):
+    if len(byte_array) == 0:
+        return ''
+    
+    message = []
+    
+    for i in range(metadata+1):
+        size = int.from_bytes(data[0:8], 'big')
+        message[i] = data[8:8+size].decode()
+        data = data[8+size:]
+
+    return message
+
+'''
 function to archive files
 input:
      files = array of files to be archived
      output_file = name of newly archived file
 output: a single file
-"""
+'''
 def arch(files, output_file):
-  
-    arch_file = open(output_file, 'wb')       # 'wb' = 'write binary'
-
-    for file in files:
-
+    arch_file = open(output_file, 'wb')                      # 'wb' = 'write binary'
+    
+    for file in files:                                       # process each file
         try:
-            bfs = os.path.getsize(file)       # get size of file in bytes
-            bf = open(file, 'rb')             # bf = binary_file; 'rb' = 'read binary'
-            bfn = file.encode()               # name of file converted to bytes
+            f = open(file, 'r')                              # open the file
+            data = bytearray()                               # create byte array
+            
+            metadata = mtob(file, len(file.encode()))        # use message-to-bytes function
+            data += metadata                                 # add filename to byte array
+            message = mtob(f.read(), os.path.getsize(file))  # use message-to-bytes function
+            data += message                                  # add file contents to byte array
 
-            data = bytearray()
-
-            data += bytearray(len(bfn).to_bytes(4, 'big'))   # 1: filename len; byte ord 'big'
-            data += bytearray(bfn)                           # 2: filename
-            data += bytearray(bfs.to_bytes(4, 'big'))        # 3: file contents len; byte ord 'big'
-            data += bytearray(bf.read())                     # 4: file contents
-
-            arch_file.write(data)
-            bf.close()
-
+            arch_file.write(data)                            # add byte array to archive
+            f.close()                                        # done with file
         except:
             print('File does not exist')
 
     arch_file.close()
 
 def unarch(file):
-
     try:
         arch_file = open(file, 'rb')                          # 'rb' = 'read binary'
         data = arch_file.read()
 
         while len(data) > 0:                                  # continue through entire file
-
             fname_len = int.from_bytes(data[:4], 'big')       # len of filename
             fname = data[4:4+fname_len]                       # actual name of file (in bytes)
             data = data[4+fname_len:]                         # remove fname_len and fname
@@ -87,14 +120,3 @@ elif sys.argv[1] == 'unarch':
 
 else:
     print('unable to use archiver. Type -help to check syntax.')
-
-
-
-
-    
-
-            
-            
-        
-    
-    
